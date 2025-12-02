@@ -3,7 +3,8 @@ Experimental exploration of evolutionary game theory and unsupervised environmen
 
 ## Build core deep learning skills
 - [x] Build backprop from scratch using my version of Karpathy's method
-- [ ] Use JAX method to understand backprop on MNIST
+- [x] Use JAX method to understand backprop on MNIST
+- [ ] Build fluency in Flax and Optax to understand advantages of different architectures
 - [ ] Implement a GAN and look at training dynamics
 
 ## First ecology experiment: predict the climate

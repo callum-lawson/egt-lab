@@ -98,13 +98,6 @@ params = optax.apply_updates(params, updates)
 
 👉 Only really needed for real training workflows, not toy MNIST scripts.
 
----
-
-## **5. TFDS — dataset loading (optional)**
-
-**Right now:**
-
-* You might be writing your own MNIST loader.
 
 ---
 
