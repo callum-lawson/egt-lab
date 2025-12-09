@@ -1,16 +1,22 @@
 # egt-lab
 Experimental exploration of evolutionary game theory and unsupervised environment design
 
-## Build core deep learning skills 
+## Build core deep learning skills with MNIST notebooks
 - [x] Build backprop from scratch using my version of Karpathy's method
-- [x] Use JAX method to understand backprop on MNIST
-- [x] Flax Linen MNIST practice
-- [x] Flax NNX MNIST practice
-- [ ] Optax MNIST practice
-- [ ] Orbax MNIST practice
+- [x] Use JAX method to understand backprop
+- [x] Flax Linen
+- [x] Flax NNX
+- [x] Optax
+- [x] Orbax
+- [x] Einsum
 
-## GANS
-- [ ] Implement a GAN and look at training dynamics
+## Adversarial approaches
+
+# GANs
+- [x] Basic loss functions
+
+# Adversarial RL
+- [ ] Understand RPG approach on a simple example
 
 ## First ecology experiment: predict the climate
 - [ ] year can be wet or dry 
