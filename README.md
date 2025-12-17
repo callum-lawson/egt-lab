@@ -1,24 +1,19 @@
-# egt-lab
-Experimental exploration of evolutionary game theory and unsupervised environment design
+# 🧬 egt-lab
 
-## Build core deep learning skills with MNIST notebooks
-- [x] Build backprop from scratch using my version of Karpathy's method
-- [x] Use JAX method to understand backprop
-- [x] Flax Linen
-- [x] Flax NNX
-- [x] Optax
-- [x] Orbax
-- [x] Einsum
 
-## Adversarial approaches
+**Experimental exploration of evolutionary game theory and unsupervised environment design** 🤖🌱🧪
 
-# GANs
-- [x] Basic loss functions
+---
 
-# Adversarial RL
-- [ ] Understand RPG approach on a simple example
+This is a collection of questions and experiments I'm exploring to help me understand how ideas from ecology and evolution might connect with robustness in reinforcement learning, and especially to unsupervised environment design (UED; see in particular [Emergent Complexity and Zero-shot Transfer via Unsupervised Environment Design](https://arxiv.org/abs/2012.02096)). If you come across anything you'd be interested in chatting about, I'd love to chat! You can message me at `callumrlawson [at] gmail [dot] com`.
 
-## First ecology experiment: predict the climate
-- [ ] year can be wet or dry 
-- [ ] environment agent gets to select the probability
-- [ ] agent gets to select the action (germinate or not)
+## Repository structure 📂
+
+- `lab-notes/`  
+  📝 One-page write-ups of questions I'm curious about and referencing research papers / mini experiments that shed some light on them.
+
+- `experiments/`  
+  ⚗️ Minimal code used to answer specific questions from the notes.
+
+- `foundations/`  
+  🏗️ Background work rebuilding core deep learning machinery (JAX, Flax, Optax, Orbax, backprop from scratch).
