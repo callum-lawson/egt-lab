@@ -10,7 +10,13 @@ This is a collection of questions and experiments I'm exploring to help me under
 ## Repository structure 📂
 
 - `lab-notes/`  
-  📝 One-page write-ups of questions I'm curious about and referencing research papers / mini experiments that shed some light on them.
+  📝 One-page write-ups of questions I'm curious about and referencing research papers / mini experiments that shed some light on them and their implications for evolution-based UED techniques. 
+  
+  - [**The non-saturating loss function in GANs**](lab-notes/2025-12-17_gan-nonsaturating-loss/notes.md) – Why the non-saturating GAN loss improves convergence and what this might teach us about UED training dynamics.
+  
+  - [**Constraints in GANs**](lab-notes/2025-12-21_gan-collapse/notes.md) – How constraints on representation and convergence affect GAN training, with experiments on latent dimensionality and learning rates.
+  
+  - [**GANs vs UED**](lab-notes/2026-01-22_gans-vs-ued/notes.md) – Exploring the analogy between GANs, UED, and EGT.
 
 - `experiments/`  
   ⚗️ Minimal code used to answer specific questions from the notes.
