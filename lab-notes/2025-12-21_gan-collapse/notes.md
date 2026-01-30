@@ -6,85 +6,56 @@ How do constraints affect training dynamics in GANs?
 
 ## Idea
 
-In ecological systems, diversity arises from *constraints*: trade-offs in fitness between different environments mean that there can be no one "Darwinian Demon" species that's optimal at everything, so species end up branching into specialists. 
+In ecological systems, diversity arises from *constraints*: trade-offs in fitness between different environments mean that there can be no one "Darwinian Demon" species that's optimal at everything, so species end up branching into diverse specialists. 
 
 Here we look at how constraints affect GAN training, hoping to provide some clues on how constraints might affect UED training and diversity generation in evolutionary game theory algorithms. 
 
 ## Problems: where GAN theory fails in practice
 
-GANs, like UED, are grounded in a minimax game in theory, but training them requires approximations which may violate the assumptions of the minimax game in practice. Three important cases are:
+GANs, like UED, are grounded in a minimax game in theory, but training them requires approximations which may violate the assumptions of the game in practice. 
 
-**1. Non-zero sum games**
+### 1. Non-zero-sum games
 
-For a game to be zero-sum (and thus a minimax game), both agents have to be fighting over the exact same loss quantity (just with a different sign). 
+For a game to be zero-sum (and thus a minimax game), both agents have to be fighting over the exact same loss quantity (one trying to increase it, the other trying to decrease it). 
 
-If the two agents are trying to maximise different objectives, there's no guarantee they'll always push against each other in the same way, and the game is not truly minimax (see for example [The non-saturating loss function in GANs](../2025-12-17_gan-nonsaturating-loss/notes.md), also discussed in Goodfellow's NeurIPS tutorial).
+If the two agents are trying to maximize different objectives, there's no guarantee they'll always push against each other in the same way, and the game is not truly minimax (see for example [The non-saturating loss function in GANs](../2025-12-17_gan-nonsaturating-loss/notes.md), also discussed in Goodfellow's NeurIPS tutorial).
 
-There are however non-zero-sum games where the minimax *equilibria* are still the same - if the point(s) at which the two agents (minimiser and maximiser) *counterbalance* each other at the same points. This is the case for the non-saturating GAN loss.
+There are, however, cases where such games are non-zero-sum but the minimax *equilibria* are still the same - if the points at which the two agents (minimizer and maximizer) *counterbalance* each other are the same. This is the case for the non-saturating GAN loss.
 
-**2. Representation constraints**
+### 2. Constraints imposed by neural network representations
 
-Even if there exists a mixed strategy that can perfectly generate the real data distribution in theory, there might not be a neural network that can represent this distribution in practice. This constraint arises from the fact that in the "infinite tabular" case of the original minimax decision theory, we can blend any set of solutions in whatever way we need to to concoct the unbeatable strategy, whereas in the applied deep learning case, the neural network itself it limited in both its "pure strategy" palette that it has available and the ability to do the blending, which it has to do as best it can internally. In mathematical jargon, this is known as non-convexity, and it can prevent us from obtaining the minimax equilibrium in either of two ways:
+**Core insight:** Minimax guarantees live in *function space* (distributions and functions can be freely mixed); neural-network training operates in *parameter space* (parameterization breaks convexity). This creates two distinct failure modes:
 
-1. The minimax equilibrium cannot be *represented*: for example, we might find one set of parameters that generates a Gaussian distribution with mean $ \mu_1 $, and another set that generates one with mean  $ \mu_2 $, but not be able to linearly interpolate between those two parameter sets to produce a bimodal Gaussian with a 50-50 mix between the two. This can constrain the generator in two ways:
+- **Representation:** Is the equilibrium distribution even in the model class?
 
-Key point: even if a neural network class is expressive, its strategy set is generally **not convex**.
+- **Convergence:** Even if it is, do the training dynamics get there, or do they cycle/collapse?
 
-If we take two generator parameter settings $\theta_1, \theta_2$, the corresponding generated distributions are
-$$
-p_{g_{\theta_1}}, \quad p_{g_{\theta_2}}.
-$$
+#### 2.1 Representation Constraints
 
-Their mixture distribution is
-$$
-\frac{1}{2} p_{g_{\theta_1}} + \frac{1}{2} p_{g_{\theta_2}}.
-$$
+Even if there's a mixed strategy that can perfectly generate the real data distribution in theory, there's no guarantee a single neural network can actually represent this in practice. 
 
-In general, there does **not** exist a single parameter vector $\theta$ such that
-$$
-p_{g_\theta}
-=
-\frac{1}{2} p_{g_{\theta_1}} + \frac{1}{2} p_{g_{\theta_2}},
-$$
-unless the model class is explicitly designed to represent mixtures (e.g. via an explicit mixture latent or gating mechanism).
+In the "infinite tabular" case of the original minimax decision theory, we can blend any set of solutions however we need to concoct the unbeatable strategy. But with neural networks, we're limited in both the "pure strategy" palette we have available and the ability to do the blending—which the network has to figure out internally, as best it can.
 
-The same issue applies to discriminators: convex combinations of realizable functions are typically not realizable within the same parameterized class.
+The problem is that the set of distributions reachable by a fixed generator is generally **not closed under mixing**, even though game theory assumes you can freely mix strategies. In function space, mixing is straightforward: take half of one distribution and half of another, and you get a bimodal distribution. But with neural network parameters, if you have two settings $\theta_1$ and $\theta_2$ that produce different distributions, their mixture is not guaranteed to match any single parameter setting. Averaging the parameters doesn't average the distributions.
 
-As a result, the classical game-theoretic assumption that players can freely play mixed strategies **within the same strategy class** no longer holds.
+#### 2.2 Convergence Constraints
 
-- Ability to *represent* the optimal adversarial distribution
+Even if there is a set of parameters that can generate the equilibrium distribution, *successive changes* in those parameters might not be able to reach it. Even with high expressivity, small parameter changes can only move the distribution in limited directions. Locally, it's easier to move existing mass (slide one peak around) or adjust the width of a mode, than to create a second separate peak or split mass between distant regions. The "mixing direction" needed for bimodality often isn't locally available, so single-mode solutions become stable attractors. The result is that gradient-based updates can get stuck at local stationary points, cycle endlessly, or depend heavily on initialization and step sizes.
 
-**3. Convergence constraints**
-
-1. The minimax equilibrium cannot be *reached*: for example, even if there is a set of parameters that can generate the bimodal distribution, *successive changes* in those parameters might not be able to reach the equilibrium in consecutive steps. This problem can be caused not just from an insufficiently flexible network, but also from aspects of the learning algorithm, so as learning rates that are too high and lead to the optimisation cycling endlessly around the equilibrium, never slowing down enough to land on it (Red Queen dynamics)
-
-1. updates are made in function space so the objective can be non-convex
-
-Even if there is a set of parameters that can generate the equilibrium distribution, *successive changes* in those parameters might not be able to reach the equilibrium in consecutive steps. This problem can be caused not just from an insufficiently flexible network, but also from aspects of the learning algorithm—such as learning rates that are too high and lead to the optimization cycling endlessly around the equilibrium, never slowing down enough to land on it (Red Queen dynamics).
-
-The same applies to the discrimnator.
-
-- Convergence problems: even if such strategies can be represented, the training dynamics might not be able to take us there.
 
 ## Experiments
 
-We test these two types of constraints:
+We test how these representation and convergence constraints affect training:
 
-**Experiment 1: Representation limits** - Vary the latent vector dimensionality (64, 4, 1) to see how model capacity affects convergence to a bimodal Gaussian distribution.
+1. **Varying latent dimensionality** – Vary the latent vector dimensionality (64, 4, 1) to explore how representation capacity affects the ability to represent a bimodal Gaussian distribution.
 
-**Experiment 2: Convergence limits** - Vary the learning rate (low, med, high) for 1D latent vectors to see how optimization dynamics affect convergence.
+2. **Varying learning rates** – Vary the learning rate (low, med, high) for 1D latent vectors to see how optimization dynamics affect convergence.
 
-### Experiment 1: representation limits
+### Experiment 1: Representation limits
 
-- *Representation limits*: Limit the size of the GAN neural network and see if it affects an ability to converge to a known GAN (generate some synthetic data from e.g. a mixed Gaussian / bimodal distribution)
+Here we limit the size of the GAN neural network and see if it affects an ability to converge to a known GAN, namely a mixed Gaussian / bimodal distribution. In particular, we vary the *latent vector*, which provides raw material for generation, similar to the dimensionality of the environment in an ecological system. (We also have varied the generator network's *architecture* but choose not to do that here).
 
-- We can vary the *latent vector* - raw material for generation, similar to dimensionality of an ecological system - or the *generator network architecture* - ability to turn that raw material into training-useful "level" differences
-
-We vary the *latent vector* dimensionality—the raw material for generation, similar to dimensionality in an ecological system—to test whether representation capacity affects the generator's ability to match a known target distribution (a mixture of two Gaussians).
-
-#### Figures (vary latent dimensionality, fixed learning rate)
-
-Training dynamics for each latent dimensionality (lr=$10^{-3}$):
+**Training dynamics** for each latent dimensionality (lr=$10^{-3}$):
 
 **Dim $z = 64$**
 
@@ -98,7 +69,7 @@ Training dynamics for each latent dimensionality (lr=$10^{-3}$):
 
 ![Training dynamics (lr=3, dim=1)](figures/train_lr3_dim1.png)
 
-Sample histograms for the same runs:
+**Sample histograms** for the same runs:
 
 **Dim $z = 64$**
 
@@ -112,13 +83,11 @@ Sample histograms for the same runs:
 
 ![Sample histogram (lr=3, dim=1)](figures/hist_lr3_dim1.png)
 
-### Experiment 2: convergence limits
+### Experiment 2: Convergence limits
 
-We vary the learning rate to test how optimization dynamics affect the generator's ability to reach equilibrium when representation capacity is severely limited (1D latent).
+Now, we vary the learning rate to test how optimization dynamics affect the generator's ability to reach equilibrium when representation capacity is limited (1D latent).
 
-#### Figures (vary learning rate for 1D latent vectors)
-
-Training dynamics for each learning rate (dim $z = 1$):
+**Training dynamics** for each learning rate (dim $z = 1$):
 
 **Low lr=$10^{-4}$**
 
@@ -132,7 +101,7 @@ Training dynamics for each learning rate (dim $z = 1$):
 
 ![Training dynamics (lr=4, dim=1)](figures/train_lr4_dim1.output.png)
 
-Sample histograms for the same runs:
+**Sample histograms** for the same runs:
 
 **Low lr=$10^{-4}$**
 
@@ -148,54 +117,23 @@ Sample histograms for the same runs:
 
 ## Conclusions
 
-Both experiments were designed to show how constraints on model structures and training algorithms lead to GANs "missing" the minimax equilibrium points predicted by the theory. This did happen, but not in the way I expected!
+Both experiments showed how constraints lead to GANs missing the minimax equilibrium - but not in the way I expected!
 
-Both experiments were designed to show how constraints on model structures and training algorithms lead to GANs "missing" the minimax equilibrium points predicted by theory. The results were surprising!
+**Representation limits:** The generator performed *better* with fewer latent dimensions (1D > 4D > 64D). This is counterintuitive - bigger isn't always better. 
 
-**Representation limits:** 
+A larger latent space gives more flexibility, but increases the risk of generating samples outside the "safe basin" where the discriminator accepts them. The easiest way to reduce that risk is to ignore most of z and output a conservative, average-looking sample. Result: bigger latent spaces lead to more mode collapse, not less.
 
-- Representation limits: representation should *match the dimensionality of the system*. In other words, model size is not only a question of small model size constraining the system; making a model too *large* may also be a problem! 
+**Convergence limits:** Simultaneously changing both generator and discriminator learning rates by the same factor derails the learning dynamics and prevents convergence. A given change in learning rate has different effects on the discriminator and generator, because their tasks have asymmetric difficulty levels: the discriminator finds it easy to locate the separation manifold early, while the generator needs to experiment wildly to stumble on anything that works. 
 
-The generator performed *better* with fewer latent dimensions (1D > 4D > 64D). This is counterintuitive—bigger models aren't always better.
+## Take-home and links to ecology
 
-A latent generator with more dimensions just has more flexibility in the randomness - A larger z makes it easier for the generator to produce a wide variety of outputs — but unless it can ensure all those outputs are high-quality, that variety increases the probability of hitting regions the discriminator rejects. The easiest way to reduce that risk is to ignore most of z and output a conservative, average-looking sample.
+- The effects of model complexity constraints can look very different early in training, where neither model is competent, compared to effects near equilibrium. It may be worth examining both regimes in our evolutionary game theory experiments: far from equilibrium and close to a known equilibrium.
 
-With a higher-dimensional latent space, the generator has more flexibility to produce diverse outputs, but this increases the risk of generating samples that fall outside the "safe basin" where the discriminator accepts them as real. The generator becomes risk-averse: rather than exploring the full space, it collapses to a conservative mode that reliably fools the discriminator. In other words, a larger latent space paradoxically leads to *less* diversity through mode collapse.
+- A given change in learning rates may have different effects on the discriminator and generator. We should therefore be aware that any effects of *relative* learning rates may change depending on which absolute learning rate we set as the baseline. 
 
-The discriminator defines a "safe basin" where samples look real. If G(z) spreads out, some mass falls outside the basin → gets punished.
+- Higher-dimensionality latent vectors may paradoxically lead to mode collapse: giving the model too many "dials" can lead to it not wanting to touch any of them for fear of being "found out". Lower-dimensionality latent vectors mean fewer dials and give the model more confidence that it can vary its outputs in natural-looking way. 
 
-The discriminator only sees one sample at a time - so it can't be like "all these IDs are the same" 
-
-Generator becomes "risk averse" - penalty for wrong answers leads to mode collapse to stay in the safe region 
-
-"with a bigger latent, the generator often has more incentive to "play it safe" by reducing output variance" - 
-
-**Convergence limits:** 
-
-Learning rate effects appear early in training when neither model is competent yet. The dynamics look qualitatively different from near-equilibrium behavior.
-
-It might not be *absolute* learning rates that matter - a given change in learning rate might mean something different to the discriminator than the generator - e.g. because the discriminator finds it easy to find the separation manifold early whereas the generator needs to experiment wildly to have any chance of stumbling on a good solution
-
-What matters may be *relative* learning rates between generator and discriminator, not absolute values. The discriminator can easily find the separation manifold early in training, while the generator must explore wildly to stumble on good solutions. Even with very small learning rates, games can cycle indefinitely because the gradient field has a strong rotational component (unlike convex optimization where gradients point downhill).
-
-## Links to ecology
-
-McNamara's convexity assumption might not hold in the sense that even with perfect mixing (at no cost), we might be constrained to a few phenotypes with particular distributions (e.g. normal distributions).
-
-## Overall take-home
-
-- Effects in the transient dynamics early in training, where neither model (and especially the generator) is good, can look very different from effects later in training when we're near the equilibrium.
-
-- It may be worth examining two regimes in our EGT experiments: far from equilibrium and close to a (known) equilibrium.
-
-- It may be *relative* learning rates that's the main determinant, not overall learning rate.
-
-- Lower-dimensionality latent vectors (uniform random draws) mean fewer dials, fewer styles of levels.
-
-## Follow-ups
-
-- Do we get around the convexity issue by having separate policies and encoding the mix, i.e. $p(\text{select})$ explicitly?
-- This is like a SoftMax over the QD cells?
+- McNamara's convexity assumption from evolutionary game theory might not hold in deep learning - in other words, there may be a "mixing cost" to evolutionary bet-hedging in neural networks that is not assumed by McNamara's model. We may be able to mitigate this cost with e.g. an explicit gating model to select different sub-networks in the policy - or by selecting from a population of policies. 
 
 ## Notes
 
